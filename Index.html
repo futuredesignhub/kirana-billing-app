@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kirana Billing - GST B2B / B2C</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16a34a">
+<style>
+*{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+body{margin:0;background:#f1f5f9;color:#0f172a}
+header{background:#16a34a;color:#fff;padding:14px 12px;position:sticky;top:0;z-index:10}
+header h1{margin:0;font-size:20px}
+header p{margin:4px 0 0;opacity:.9;font-size:13px}
+.wrap{max-width:980px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1;min-width:140px}
+input,select,button{padding:10px 11px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;width:100%;background:#fff}
+button{background:#16a34a;color:#fff;border:none;font-weight:700;cursor:pointer}
+button.sec{background:#0f172a}
+button.light{background:#e2e8f0;color:#0f172a}
+button.warn{background:#f59e0b;color:#111}
+.tabs{display:flex;gap:8px;margin:12px 0}
+.tabs button{flex:1}
+.tabs button.active{background:#0f172a}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.prod{border:1px solid #e2e8f0;border-radius:12px;padding:10px;background:#f8fafc;cursor:pointer}
+.prod b{display:block}
+.badge{display:inline-block;font-size:11px;background:#dcfce7;padding:3px 7px;border-radius:20px;margin-top:6px}
+.badge.red{background:#fee2e2}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}
+.qtybtn{width:32px;height:32px;padding:0;border-radius:8px}
+.toggle{display:flex;gap:8px}
+.toggle button{flex:1}
+.toggle button.off{background:#e2e8f0;color:#111}
+.small{font-size:12px;color:#64748b}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kpi div{background:#f8fafc;border-radius:12px;padding:12px;text-align:center}
+.kpi b{font-size:20px;display:block}
+.hidden{display:none}
+.bill{border:1px dashed #94a3b8;padding:12px;border-radius:12px;background:#fff}
+@media(max-width:600px){.kpi{grid-template-columns:1fr 1fr}.row>*{min-width:100%}}
+</style>
+</head>
+<body>
+<header>
+<h1 id="shopName">🛒 Apni Kirana Dukaan</h1>
+<p>GST Billing • B2B / B2C • Khata • Stock • Reports</p>
+</header>
+<div class="wrap">
+<div class="card">
+<div class="row">
+<input id="shopInput" placeholder="Dukaan ka naam - jaise Sharma Kirana Store">
+<input id="gstinInput" placeholder="Apna GSTIN - agar hai to, nahi to khali chhodo">
+<input id="upiInput" placeholder="UPI ID - jaise 98765@paytm">
+</div>
+<div style="margin-top:10px" class="toggle">
+<button id="btnNonGst" onclick="setGstMode('non')">Non-GST Bill</button>
+<button id="btnGst" onclick="setGstMode('gst')">GST Bill</button>
+</div>
+<div id="gstTypeWrap" class="toggle" style="margin-top:8px">
+<button id="btnB2C" onclick="setCustType('B2C')">B2C - Normal Customer</button>
+<button id="btnB2B" onclick="setCustType('B2B')">B2B - Vyapari Customer</button>
+</div>
+<p class="small" id="gstNote">B2C me customer se GSTIN nahi mangenge, bill pe Inclusive of GST likha aayega. Andar hi andar GST calculate hoga tumhare GSTR ke liye.</p>
+</div>
+
+<div class="tabs">
+<button class="active" onclick="showTab('billing',this)">Billing</button>
+<button onclick="showTab('products',this)">Samaan</button>
+<button onclick="showTab('khata',this)">Khata</button>
+<button onclick="showTab('reports',this)">Hisaab</button>
+</div>
+
+<!-- BILLING -->
+<div id="tab-billing">
+<div class="card">
+<div class="row">
+<input id="search" placeholder="Search / Barcode - jaise Aata, 890..." oninput="renderProducts()">
+<select id="payMode"><option value="Cash">Cash</option><option value="UPI">UPI</option><option value="Udhaar">Udhaar</option></select>
+<input id="custName" placeholder="Customer naam">
+<input id="custMobile" placeholder="Mobile - 10 digit">
+</div>
+<div class="row" style="margin-top:8px" id="b2bFields">
+<input id="custGstin" placeholder="Customer GSTIN - 15 digit, B2B ke liye">
+<select id="custState"><option>Chhattisgarh</option><option>Maharashtra</option><option>Madhya Pradesh</option><option>Uttar Pradesh</option><option>Delhi</option><option>Odisha</option><option>Other State</option></select>
+<input id="poNo" placeholder="PO No. / Transport - optional">
+</div>
+<div class="row" style="margin-top:8px">
+<button class="light" onclick="setKg(0.25)">0.25 kg</button>
+<button class="light" onclick="setKg(0.5)">0.5 kg</button>
+<button class="light" onclick="setKg(1)">1 kg</button>
+<button class="light" onclick="setKg(2)">2 kg</button>
+<button class="light" onclick="setKg(5)">5 kg</button>
+</div>
+</div>
+<div class="card"><b>Samaan chuno</b><p class="small">Product pe tap karo, cart me add ho jayega. Loose maal ke liye pehle kg chuno.</p><div class="grid" id="prodGrid"></div></div>
+<div class="card">
+<b>Cart - Bill No: <span id="billNo">INV-K-001</span></b>
+<table><thead><tr><th>Samaan</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr></thead><tbody id="cartBody"></tbody></table>
+<div class="row" style="margin-top:10px">
+<input id="discount" type="number" value="0" placeholder="Discount %" oninput="renderCart()">
+<input id="extraCharge" type="number" value="0" placeholder="Extra charge">
+</div>
+<div id="totals" style="margin-top:10px;line-height:1.8"></div>
+<button onclick="makeBill()">✅ Bill Banao + Stock Auto Cut</button>
+<button class="sec" style="margin-top:8px" onclick="sendWhatsApp()">📱 WhatsApp pe Bill Bhejo</button>
+<div id="billPreview" class="bill hidden" style="margin-top:12px"></div>
+</div>
+</div>
+
+<!-- PRODUCTS -->
+<div id="tab-products" class="hidden">
+<div class="card"><b>Naya samaan jodo</b><div class="row" style="margin-top:8px"><input id="newName" placeholder="Naam - jaise Besan"><input id="newPrice" type="number" placeholder="Price"><input id="newStock" type="number" placeholder="Stock"><input id="newHsn" placeholder="HSN - jaise 1101"><select id="newGst"><option value="0">GST 0%</option><option value="5" selected>GST 5%</option><option value="12">GST 12%</option><option value="18">GST 18%</option></select></div><button style="margin-top:10px" onclick="addProduct()">+ Samaan Jodo</button></div>
+<div class="card"><b>Stock List</b><div id="stockList" style="margin-top:10px"></div></div>
+</div>
+
+<!-- KHATA -->
+<div id="tab-khata" class="hidden">
+<div class="card"><b>Udhaar Khata Book</b><p class="small">Jisne Udhaar pe liya, wo yahan dikhega. Payment aane pe Receive dabao.</p><div id="khataList"></div></div>
+</div>
+
+<!-- REPORTS -->
+<div id="tab-reports" class="hidden">
+<div class="card"><div class="kpi"><div><span>Aaj ki Sale</span><b id="kpiSale">₹0</b></div><div><span>Total Bill</span><b id="kpiBills">0</b></div><div><span>Udhaar Baki</span><b id="kpiUdhaar">₹0</b></div></div><div style="margin-top:12px"><b>Recent Bills</b><div id="recentBills"></div></div><div style="margin-top:12px"><b>GST Report - GSTR ke liye</b><div id="gstReport"></div></div><button class="warn" style="margin-top:10px" onclick="exportCSV()">⬇ CSV Download - Excel ke liye</button></div>
+</div>
+
+<div class="card"><b>Install kaise karein?</b><p class="small">Android Chrome me kholo > 3 dots > Add to Home Screen dabao. App jaisa icon ban jayega. GitHub Pages pe daalne ke baad ye link hi tumhara app ban jayega.</p></div>
+</div>
+
+<script>
+let products = JSON.parse(localStorage.getItem('kirana_products')||'null') || [
+{id:1,name:'Aata 5kg',price:240,stock:20,hsn:'1101',gst:5},
+{id:2,name:'Chawal 5kg',price:320,stock:15,hsn:'1006',gst:5},
+{id:3,name:'Sarso Tel 1L',price:185,stock:12,hsn:'1515',gst:5},
+{id:4,name:'Arhar Daal 1kg',price:165,stock:18,hsn:'0713',gst:5},
+{id:5,name:'Namak 1kg',price:28,stock:40,hsn:'2501',gst:0},
+{id:6,name:'Chai Patti 250g',price:125,stock:22,hsn:'0902',gst:5},
+{id:7,name:'Biscuit',price:30,stock:50,hsn:'1905',gst:18},
+{id:8,name:'Soap',price:45,stock:30,hsn:'3401',gst:18},
+{id:9,name:'Cheeni 1kg',price:42,stock:25,hsn:'1701',gst:5},
+{id:10,name:'Besan 1kg',price:85,stock:16,hsn:'1106',gst:5},
+{id:11,name:'Haldi 500g',price:140,stock:10,hsn:'0910',gst:5},
+{id:12,name:'Shampoo',price:95,stock:14,hsn:'3305',gst:18},
+];
+let cart = [];
+let bills = JSON.parse(localStorage.getItem('kirana_bills')||'[]');
+let khata = JSON.parse(localStorage.getItem('kirana_khata')||'[]');
+let billCounter = parseInt(localStorage.getItem('kirana_counter')||'1');
+let gstMode='gst', custType='B2C', selectedKg=1;
+let shopName = localStorage.getItem('kirana_shop')||'Apni Kirana Dukaan';
+let shopGstin = localStorage.getItem('kirana_shop_gstin')||'';
+let shopUpi = localStorage.getItem('kirana_upi')||'';
+
+function save(){localStorage.setItem('kirana_products',JSON.stringify(products));localStorage.setItem('kirana_bills',JSON.stringify(bills));localStorage.setItem('kirana_khata',JSON.stringify(khata));localStorage.setItem('kirana_counter',billCounter);localStorage.setItem('kirana_shop',shopName);localStorage.setItem('kirana_shop_gstin',shopGstin);localStorage.setItem('kirana_upi',shopUpi);}
+
+function showTab(id,btn){document.querySelectorAll('[id^="tab-"]').forEach(e=>e.classList.add('hidden'));document.getElementById('tab-'+id).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));btn.classList.add('active'); if(id==='khata')renderKhata(); if(id==='reports')renderReports(); if(id==='products')renderStock();}
+
+function setGstMode(m){gstMode=m;document.getElementById('btnGst').className=m==='gst'?'':'off';document.getElementById('btnNonGst').className=m==='non'?'':'off';document.getElementById('gstTypeWrap').style.display=m==='gst'?'flex':'none';document.getElementById('gstNote').innerText=m==='gst'?'GST Bill me B2C / B2B chun sakte ho.':'Non-GST Bill me GST nahi lagega, simple bill banega.';renderCart();}
+function setCustType(t){custType=t;document.getElementById('btnB2C').className=t==='B2C'?'':'off';document.getElementById('btnB2B').className=t==='B2B'?'':'off';document.getElementById('b2bFields').style.display=t==='B2B'?'flex':'none';renderCart();}
+function setKg(k){selectedKg=k;alert(k+' kg select ho gaya, ab product pe tap karo');}
+
+function renderProducts(){
+let q=(document.getElementById('search').value||'').toLowerCase();
+let grid=document.getElementById('prodGrid');grid.innerHTML='';
+products.filter(p=>p.name.toLowerCase().includes(q)).forEach(p=>{
+let d=document.createElement('div');d.className='prod';d.innerHTML=`<b>${p.name}</b><span>₹${p.price} • Stock: ${p.stock}</span><br><span class="badge">HSN ${p.hsn} • GST ${p.gst}%</span> ${p.stock<=5?'<span class="badge red">Low Stock</span>':''}`;
+d.onclick=()=>addToCart(p.id);grid.appendChild(d);
+});
+}
+function addToCart(id){
+let p=products.find(x=>x.id===id); if(!p||p.stock<=0){alert('Stock khatam hai');return;}
+let ex=cart.find(c=>c.id===id); if(ex){ex.qty+=selectedKg;} else {cart.push({id:p.id,name:p.name,price:p.price,gst:p.gst,hsn:p.hsn,qty:selectedKg});}
+renderCart();
+}
+function renderCart(){
+let tb=document.getElementById('cartBody');tb.innerHTML='';
+let sub=0;
+cart.forEach((c,i)=>{
+let tot=c.price*c.qty;sub+=tot;
+tb.innerHTML+=`<tr><td>${c.name}<br><span class="small">HSN ${c.hsn}</span></td><td><button class="qtybtn" onclick="chgQty(${i},-1)">-</button> ${c.qty} <button class="qtybtn" onclick="chgQty(${i},1)">+</button></td><td>₹${c.price}</td><td>₹${tot.toFixed(0)}</td><td><button onclick="removeCart(${i})" style="background:#ef4444;padding:6px">X</button></td></tr>`;
+});
+let discPct=parseFloat(document.getElementById('discount').value||0);
+let disc=sub*discPct/100;
+let taxable=sub-disc;
+let gstAmt=0;
+if(gstMode==='gst'){cart.forEach(c=>{let line=c.price*c.qty;let lineAfter=line - (line/sub*disc||0); gstAmt+=lineAfter*c.gst/100;});}
+let extra=parseFloat(document.getElementById('extraCharge').value||0);
+let total=taxable+gstAmt+extra;
+let state=document.getElementById('custState').value;
+let isLocal = state==='Chhattisgarh';
+let cgst=0,sgst=0,igst=0;
+if(gstMode==='gst' && custType==='B2B'){ if(isLocal){cgst=gstAmt/2;sgst=gstAmt/2;} else {igst=gstAmt;} }
+document.getElementById('totals').innerHTML=`Subtotal: ₹${sub.toFixed(0)}<br>Discount (${discPct}%): -₹${disc.toFixed(0)}<br>Taxable: ₹${taxable.toFixed(0)}<br>${gstMode==='gst'?(custType==='B2B'?`CGST: ₹${cgst.toFixed(0)}<br>SGST: ₹${sgst.toFixed(0)}<br>IGST: ₹${igst.toFixed(0)}<br>Total GST: ₹${gstAmt.toFixed(0)}<br>`:`GST (Inclusive): ₹${gstAmt.toFixed(0)} <span class="small">Bill pe Inclusive of GST likha aayega</span><br>`):'GST: ₹0 - Non-GST Bill<br>'}<b>Grand Total: ₹${total.toFixed(0)}</b>`;
+document.getElementById('billNo').innerText='INV-K-'+String(billCounter).padStart(3,'0');
+}
+function chgQty(i,d){cart[i].qty=Math.max(0.25,cart[i].qty+d); if(cart[i].qty<=0)cart.splice(i,1); renderCart();}
+function removeCart(i){cart.splice(i,1);renderCart();}
+function addProduct(){
+let n=document.getElementById('newName').value.trim(); if(!n){alert('Naam likho');return;}
+products.push({id:Date.now(),name:n,price:parseFloat(document.getElementById('newPrice').value||0),stock:parseFloat(document.getElementById('newStock').value||0),hsn:document.getElementById('newHsn').value||'0000',gst:parseFloat(document.getElementById('newGst').value)});
+save();renderProducts();renderStock();alert('Samaan add ho gaya');
+}
+function renderStock(){document.getElementById('stockList').innerHTML=products.map(p=>`<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee"><span><b>${p.name}</b> - ₹${p.price} • HSN ${p.hsn} • GST ${p.gst}%</span><span>Stock: ${p.stock} ${p.stock<=5?'🔴 Low':''}</span></div>`).join('');}
+function makeBill(){
+if(cart.length===0){alert('Pehle samaan add karo');return;}
+let sub=cart.reduce((s,c)=>s+c.price*c.qty,0);
+let discPct=parseFloat(document.getElementById('discount').value||0);
+let disc=sub*discPct/100; let taxable=sub-disc;
+let gstAmt=0; if(gstMode==='gst'){cart.forEach(c=>{let line=c.price*c.qty; let after=line-(line/sub*disc||0); gstAmt+=after*c.gst/100;});}
+let extra=parseFloat(document.getElementById('extraCharge').value||0);
+let total=taxable+gstAmt+extra;
+let cust=document.getElementById('custName').value||'Cash Customer';
+let mobile=document.getElementById('custMobile').value||'';
+let pay=document.getElementById('payMode').value;
+let billNo='INV-K-'+String(billCounter).padStart(3,'0');
+let bill={no:billNo,date:new Date().toLocaleDateString('hi-IN'),cust,mobile,pay,total,taxable,gst:gstAmt,mode:gstMode,type:custType,items:[...cart]};
+bills.unshift(bill);
+cart.forEach(c=>{let p=products.find(x=>x.id===c.id); if(p)p.stock-=c.qty;});
+if(pay==='Udhaar'){khata.push({name:cust,mobile,amount:total,billNo,date:bill.date,paid:false});}
+billCounter++; save(); renderProducts(); renderStock(); renderReports();
+document.getElementById('billPreview').classList.remove('hidden');
+document.getElementById('billPreview').innerHTML=`<b>${shopName}</b><br>${shopGstin? 'GSTIN: '+shopGstin+'<br>':''}Bill No: ${billNo} • ${bill.date}<br>Customer: ${cust} (${custType} - ${gstMode})<br><hr>${bill.items.map(i=>`${i.name} x ${i.qty} = ₹${(i.price*i.qty).toFixed(0)}`).join('<br>')}<hr>Taxable: ₹${taxable.toFixed(0)}<br>GST: ₹${gstAmt.toFixed(0)}<br><b>Total: ₹${total.toFixed(0)}</b><br>Payment: ${pay} ${shopUpi? '• UPI: '+shopUpi:''}<br><span class="small">${gstMode==='gst'&&custType==='B2C'?'Inclusive of GST':''}</span>`;
+cart=[]; renderCart(); alert('Bill ban gaya: '+billNo);
+}
+function sendWhatsApp(){
+let last=bills[0]; if(!last){alert('Pehle bill banao');return;}
+let msg=`${shopName}%0A Bill: ${last.no} %0A Customer: ${last.cust}%0A Total: ₹${last.total.toFixed(0)}%0A Payment: ${last.pay}%0A Dhanyavaad!`;
+window.open('https://wa.me/?text='+msg,'_blank');
+}
+function renderKhata(){document.getElementById('khataList').innerHTML=khata.length?khata.map((k,i)=>`<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #eee"><span><b>${k.name}</b> - ${k.mobile}<br><span class="small">${k.billNo} • ${k.date}</span></span><span><b>₹${k.amount}</b><br>${k.paid?'<span style="color:green">Paid ✅</span>':`<button onclick="markPaid(${i})" style="padding:6px">Receive</button>`}</span></div>`).join(''):'<p>Abhi koi udhaar nahi hai.</p>';}
+function markPaid(i){khata[i].paid=true;save();renderKhata();renderReports();alert('Payment mil gaya');}
+function renderReports(){
+let todaySale=bills.reduce((s,b)=>s+b.total,0);
+let udhaar=khata.filter(k=>!k.paid).reduce((s,k)=>s+k.amount,0);
+document.getElementById('kpiSale').innerText='₹'+todaySale.toFixed(0);
+document.getElementById('kpiBills').innerText=bills.length;
+document.getElementById('kpiUdhaar').innerText='₹'+udhaar.toFixed(0);
+document.getElementById('recentBills').innerHTML=bills.slice(0,10).map(b=>`<div style="padding:8px;border-bottom:1px solid #eee;display:flex;justify-content:space-between"><span>${b.no} - ${b.cust} (${b.type})</span><b>₹${b.total.toFixed(0)} • ${b.pay}</b></div>`).join('')||'Koi bill nahi';
+let b2b=bills.filter(b=>b.type==='B2B').reduce((s,b)=>s+b.total,0);
+let b2c=bills.filter(b=>b.type==='B2C').reduce((s,b)=>s+b.total,0);
+let non=bills.filter(b=>b.mode==='non').reduce((s,b)=>s+b.total,0);
+document.getElementById('gstReport').innerHTML=`B2B Total: ₹${b2b.toFixed(0)}<br>B2C Total: ₹${b2c.toFixed(0)}<br>Non-GST Total: ₹${non.toFixed(0)}<br>Total GST Collected: ₹${bills.reduce((s,b)=>s+b.gst,0).toFixed(0)}`;
+}
+function exportCSV(){
+let csv='BillNo,Date,Customer,Type,Payment,Total,GST\n'+bills.map(b=>`${b.no},${b.date},${b.cust},${b.type},${b.pay},${b.total},${b.gst}`).join('\n');
+let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='kirana_bills.csv';a.click();
+}
+// shop inputs
+document.getElementById('shopInput').value=shopName;
+document.getElementById('gstinInput').value=shopGstin;
+document.getElementById('upiInput').value=shopUpi;
+document.getElementById('shopInput').oninput=e=>{shopName=e.target.value;document.getElementById('shopName').innerText='🛒 '+shopName;save();};
+document.getElementById('gstinInput').oninput=e=>{shopGstin=e.target.value;save();};
+document.getElementById('upiInput').oninput=e=>{shopUpi=e.target.value;save();};
+document.getElementById('shopName').innerText='🛒 '+shopName;
+setGstMode('gst'); setCustType('B2C'); renderProducts(); renderCart(); renderReports(); renderStock();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+</body>
+</html>
